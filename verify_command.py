@@ -1,48 +1,36 @@
 #!/usr/bin/env python3
-import os
-import subprocess
+import os 
 import sys
 
-# Check if a given command is valid
-def is_valid_command(command):
-    # Extract the main command (first word) from the input
-    cmd = command.split()[0] if command.split() else ""
+# Using 'preexec()' to store the most recent command
+# 'preexec()' is executed after you press enter but before it is executed 
+LAST_COMMAND = ""
+def preexec(command):
+    global LAST_COMMAND
+    LAST_COMMAND = command
+    return LAST_COMMAND
 
-    # Return False if the command is empty
-    if not cmd: 
-        return False
+# Grabs the exit staus of a command using 'os.system()'
+def check_command_hook(LAST_COMMAND):
+    exit_status = os.system(LAST_COMMAND)
+    print(f"Exit Satus of '{LAST_COMMAND}'", exit_status)
+    return exit_status
 
-    try:
-        # Check if the command exists using 'command -v'
-        result = subprocess.run(
-            ["command", "-v", cmd],  # Runs 'command -v <cmd>' to check existence
-            shell=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        # Return True if output is not empty, indicating command exists
-        return bool(result.stdout.strip())
-    except Exception:
-        return False  # If an error occurs, assume the command is invalid
-
-# Handle command-line input and validation
 def main():
     # Ensure a command argument is provided
     if len(sys.argv) < 2:
-        print("Usage: verify_command.py <command>")
+        print("Need Command.")
         sys.exit(1) 
 
     # Construct the full command string from arguments
     full_command = " ".join(sys.argv[1:])
-
-    # Check if the command is valid and print the appropriate message
-    if is_valid_command(full_command):
-        print(f"'{full_command}' is a valid command.")
-        sys.exit(0) 
-    else:
-        print(f"'{full_command}' is not a valid command.")
-        sys.exit(1) 
+    preexec(full_command)
+    # Writes to a file if command is valid
+    if check_command_hook(LAST_COMMAND) == 0:
+        with open("/usr/local/bin/commands.txt", "a") as file:
+            file.write(f"{LAST_COMMAND}\n")
+    sys.exit(0) 
+    
 
 if __name__ == "__main__":
     main()
