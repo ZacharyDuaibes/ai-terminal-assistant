@@ -1,0 +1,19 @@
+# Add this to your ~/.zshrc
+
+# Ensure add-zsh-hook is loaded
+autoload -Uz add-zsh-hook
+
+preexec_hook() {
+    # Avoid calling the script if it's the toggle command itself.
+    if [[ "$1" == *"verify_command.py"* ]]; then
+        return
+    fi
+
+    # Check if logging is enabled (flag file exists)
+    if [ -f ~/.logging_flag ]; then
+        /usr/local/bin/verify_command.py "$1"
+    fi
+}
+
+# Register the preexec hook
+add-zsh-hook preexec preexec_hook
