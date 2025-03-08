@@ -3,11 +3,15 @@
 # Required libraries
 import os 
 import sys
+import sqlite3
 
+# Constants for file paths (all in home directory)
 # Log commands in home directory
 LOG_FILE = os.path.expanduser("~/commands.txt")
 # Flag file to enable toggle
 FLAG_FILE = os.path.expanduser("~/.logging_flag")
+# DB file
+DB_FILE = os.path.expanduser("~/commands.db")
 
 # Storing most recent command
 LAST_COMMAND = ""
@@ -21,9 +25,9 @@ def preexec(command):
 # Grabs the exit staus of a command using 'os.system()'
 def check_command_hook(LAST_COMMAND):
     exit_status = os.system(LAST_COMMAND)
-    print(f"Exit Satus of '{LAST_COMMAND}'", exit_status)
     return exit_status
 
+# Enable/disable logging based on state ('1' to start, '0' to end)
 def toggle_logging(state):
     if state == "1":
         open(FLAG_FILE, "w").close()
@@ -34,7 +38,7 @@ def toggle_logging(state):
         print("Logging off")
 
 def main():
-    # Require at least one argument.
+    # Require at least one argument
     if len(sys.argv) < 2:
         print("Usage: verify_command.py [1|0|<command>]")
         sys.exit(1)
@@ -51,12 +55,22 @@ def main():
     # Only proceed if logging is enabled (i.e. the flag file exists).
     if os.path.exists(FLAG_FILE):
         if check_command_hook(LAST_COMMAND) == 0:
-            with open(LOG_FILE, "a") as file:
-                file.write(f"{LAST_COMMAND}\n")
-    else:
-        # Logging is disabled; do nothing or simply exit.
-        pass
-
+            connect = sqlite3.connect(DB_FILE)
+            cursor = connect.cursor()
+            
+            try:
+                cursor.execute('''
+                               INSERT INTO commands (command_text, last_used, usage_count)
+                               VALUES (?, CURRENT_TIMESTAMP, 1)
+                               ON CONFLICT(command_text)
+                               DO UPDATE SET
+                                    last_used = CURRENT_TIMESTAMP,
+                                    usage_count = usage_count + 1
+                               ''', (LAST_COMMAND,))
+                connect.commit()
+            except sqlite3.Error as e:
+                print(f"Database error: {e}")
+                
     sys.exit(0)
 
 if __name__ == "__main__":

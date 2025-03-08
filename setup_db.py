@@ -1,8 +1,12 @@
 # Import library
 import sqlite3
+import os
+
+# Use an absolute path for the database file.
+DB_FILE = os.path.expanduser("~/commands.db")
 
 # Create a connection to the database commands.db 
-connect = sqlite3.connect("commands.db")
+connect = sqlite3.connect(DB_FILE)
 # Database cursor in order to execute SQL statements
 cursor = connect.cursor()
 
