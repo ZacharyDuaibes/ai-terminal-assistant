@@ -11,7 +11,7 @@ preexec_hook() {
 
     # Check if logging is enabled (flag file exists)
     if [ -f ~/.logging_flag ]; then
-        /usr/local/bin/verify_command.py "$1"
+        /path/to/your/ai-terminal-assistant/verify_command.py "$1"
     fi
 }
 
